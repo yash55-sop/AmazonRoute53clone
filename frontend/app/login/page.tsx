@@ -24,7 +24,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
 
   useEffect(() => {
-    if (!loading && user) router.replace("/");
+    if (!loading && user) router.replace("/route53/hosted-zones");
   }, [loading, router, user]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -33,7 +33,7 @@ export default function LoginPage() {
     setError("");
     try {
       await signIn({ username, password });
-      router.replace("/");
+      router.replace("/route53/hosted-zones");
     } catch (reason) {
       setError(
         reason instanceof AuthError

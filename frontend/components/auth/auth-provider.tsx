@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as authApi from "@/lib/api/auth";
 import type { AuthUser, LoginCredentials } from "@/types/api";
@@ -17,7 +17,19 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const loading = false;
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    authApi
+      .getCurrentUser()
+      .then((currentUser) => active && setUser(currentUser))
+      .catch(() => active && setUser(null))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
