@@ -1,0 +1,64 @@
+body {
+  margin: 0;
+  color: var(--color-text-body-default-gtm97i);
+  background: var(--color-background-layout-main-7z8vaj);
+}
+
+.global-flash {
+  position: relative;
+  z-index: 900;
+  padding: 12px 20px 0;
+  background: var(--color-background-layout-main-7z8vaj);
+}
+
+.table-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 190px;
+  gap: 10px;
+}
+
+.route53-form-page {
+  width: 100%;
+  max-width: 1100px;
+}
+
+.record-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(280px, 1.6fr);
+  gap: 24px;
+}
+
+.record-value {
+  max-width: 520px;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.login-page {
+  min-height: calc(100vh - 52px);
+  padding: 1px 0;
+  background: var(--color-background-layout-main-7z8vaj);
+}
+
+.login-card {
+  width: min(420px, calc(100% - 48px));
+  margin: 72px auto;
+}
+
+.auth-loading {
+  display: grid;
+  min-height: 70vh;
+  place-items: center;
+  color: var(--color-text-body-secondary-y6dr4d);
+}
+
+@media (max-width: 760px) {
+  .table-filters,
+  .record-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .login-card {
+    margin: 32px auto;
+  }
+}

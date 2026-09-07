@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.env*
+!.env.example
+.git/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
