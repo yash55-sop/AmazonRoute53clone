@@ -20,3 +20,8 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     if auth_session is None:
         raise HTTPException(status_code=401, detail="Authentication required")
     return auth_session.user
+
+
+def get_optional_current_user(request: Request, db: Session = Depends(get_db)) -> User | None:
+    auth_session = session_for_token(db, request.cookies.get(settings.session_cookie_name))
+    return auth_session.user if auth_session is not None else None

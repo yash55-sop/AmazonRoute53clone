@@ -97,6 +97,21 @@ def test_authentication_lifecycle(client: TestClient):
     assert client.get("/api/v1/auth/me").status_code == 401
 
 
+def test_create_hosted_zone_without_authentication(client: TestClient, db_factory):
+    created = client.post(
+        "/api/v1/hosted-zones",
+        json={"name": "anonymous.example", "description": "Created without login"},
+    )
+
+    assert created.status_code == 201
+    assert created.json()["name"] == "anonymous.example"
+    assert client.get("/api/v1/hosted-zones").status_code == 401
+    with db_factory() as db:
+        zone = db.scalar(select(HostedZone).where(HostedZone.name == "anonymous.example"))
+        assert zone is not None
+        assert zone.user.username == "admin"
+
+
 def test_hosted_zone_and_record_crud(client: TestClient):
     login(client)
     created = client.post(

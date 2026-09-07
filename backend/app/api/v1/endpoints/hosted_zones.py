@@ -3,10 +3,11 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user, get_db
+from app.api.dependencies import get_current_user, get_db, get_optional_current_user
 from app.models import User
 from app.schemas import HostedZoneCreate, HostedZonePage, HostedZoneResponse, HostedZoneUpdate
 from app.services import zones
+from app.services.auth import ensure_demo_user
 
 router = APIRouter(prefix="/hosted-zones", tags=["hosted zones"])
 
@@ -33,9 +34,9 @@ def create_hosted_zone(
     data: HostedZoneCreate,
     response: Response,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User | None = Depends(get_optional_current_user),
 ) -> HostedZoneResponse:
-    zone = zones.create_zone(db, user, data)
+    zone = zones.create_zone(db, user or ensure_demo_user(db), data)
     response.headers["Location"] = f"/api/v1/hosted-zones/{zone.zone_id}"
     return zone
 
