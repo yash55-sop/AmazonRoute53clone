@@ -97,23 +97,47 @@ def test_authentication_lifecycle(client: TestClient):
     assert client.get("/api/v1/auth/me").status_code == 401
 
 
-def test_create_hosted_zone_without_authentication(client: TestClient, db_factory):
+def test_unauthenticated_route53_demo_workflow(client: TestClient, db_factory):
     created = client.post(
         "/api/v1/hosted-zones",
-        json={"name": "anonymous.example", "description": "Created without login"},
+        json={"name": "example.com", "description": "Created without login"},
     )
 
     assert created.status_code == 201
-    assert created.json()["name"] == "anonymous.example"
-    assert client.get("/api/v1/hosted-zones").status_code == 401
+    zone_id = created.json()["zone_id"]
+    assert created.json()["name"] == "example.com"
+    listed = client.get("/api/v1/hosted-zones")
+    assert listed.status_code == 200
+    assert [zone["name"] for zone in listed.json()["items"]] == ["example.com"]
+    assert client.get(f"/api/v1/hosted-zones/{zone_id}").status_code == 200
+
+    records_url = f"/api/v1/hosted-zones/{zone_id}/records"
+    record = client.post(
+        records_url,
+        json={"name": "test", "type": "A", "value": "192.0.2.1", "ttl": 300},
+    )
+    assert record.status_code == 201
+    record_id = record.json()["record_id"]
+    assert record.json()["name"] == "test.example.com"
+    assert record.json()["value"] == "192.0.2.1"
+    refreshed_records = client.get(records_url).json()["items"]
+    assert any(item["record_id"] == record_id for item in refreshed_records)
+
     with db_factory() as db:
-        zone = db.scalar(select(HostedZone).where(HostedZone.name == "anonymous.example"))
+        zone = db.scalar(select(HostedZone).where(HostedZone.name == "example.com"))
         assert zone is not None
         assert zone.user.username == "admin"
+        persisted = db.scalar(select(DNSRecord).where(DNSRecord.record_id == record_id))
+        assert persisted is not None
+        assert persisted.value == "192.0.2.1"
+
+    assert client.put(f"{records_url}/{record_id}", json={"ttl": 600}).status_code == 200
+    assert client.delete(f"{records_url}/{record_id}").status_code == 204
+    assert client.delete(f"/api/v1/hosted-zones/{zone_id}").status_code == 204
+    assert client.get("/api/v1/hosted-zones").json()["total"] == 0
 
 
 def test_hosted_zone_and_record_crud(client: TestClient):
-    login(client)
     created = client.post(
         "/api/v1/hosted-zones",
         json={"name": "Example.COM.", "description": "Demo"},
@@ -184,7 +208,6 @@ def test_hosted_zone_and_record_crud(client: TestClient):
 
 
 def test_zone_search_pagination_duplicate_and_validation(client: TestClient):
-    login(client)
     for name, zone_type in (("alpha.example", "PUBLIC"), ("beta.example", "PRIVATE")):
         assert (
             client.post(
@@ -198,8 +221,7 @@ def test_zone_search_pagination_duplicate_and_validation(client: TestClient):
     assert client.post("/api/v1/hosted-zones", json={"name": "not a domain"}).status_code == 422
 
 
-def test_ownership_isolation(client: TestClient, db_factory):
-    login(client)
+def test_route53_demo_uses_shared_owner(client: TestClient, db_factory):
     zone_id = client.post("/api/v1/hosted-zones", json={"name": "private.example"}).json()[
         "zone_id"
     ]
@@ -218,18 +240,17 @@ def test_ownership_isolation(client: TestClient, db_factory):
             ).status_code
             == 200
         )
-        assert other.get(f"/api/v1/hosted-zones/{zone_id}").status_code == 404
+        assert other.get(f"/api/v1/hosted-zones/{zone_id}").status_code == 200
         record_url = f"/api/v1/hosted-zones/{zone_id}/records/{record_id}"
-        assert other.get(record_url).status_code == 404
-        assert other.put(record_url, json={"value": "192.0.2.20"}).status_code == 404
-        assert other.delete(record_url).status_code == 404
-        assert client.get(record_url).json()["value"] == "192.0.2.10"
+        assert other.get(record_url).status_code == 200
+        assert other.put(record_url, json={"value": "192.0.2.20"}).status_code == 200
+        assert client.get(record_url).json()["value"] == "192.0.2.20"
+        assert other.delete(record_url).status_code == 204
     finally:
         other.close()
 
 
 def test_record_update_delete_persistence_and_failures(client: TestClient, db_factory):
-    login(client)
     zone_id = client.post("/api/v1/hosted-zones", json={"name": "records.example"}).json()[
         "zone_id"
     ]
@@ -308,13 +329,10 @@ def test_record_update_delete_persistence_and_failures(client: TestClient, db_fa
     assert client.get(cname_url).status_code == 404
 
     assert client.post("/api/v1/auth/logout").status_code == 204
-    assert client.get(collection_url).status_code == 401
-    assert client.put(record_url, json={"ttl": 60}).status_code == 401
-    assert client.delete(record_url).status_code == 401
+    assert client.get(collection_url).status_code == 200
 
 
 def test_bind_import_export_bulk_delete_and_rollback(client: TestClient):
-    login(client)
     zone_id = client.post("/api/v1/hosted-zones", json={"name": "import.example"}).json()["zone_id"]
     content = (
         "import.example. 300 IN A 192.0.2.20\nmail.import.example. 600 IN MX 10 mx.import.example."

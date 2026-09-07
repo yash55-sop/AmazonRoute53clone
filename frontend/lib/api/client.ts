@@ -15,7 +15,7 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const response = await fetch(`${publicConfig.apiUrl}${path}`, {
     ...init,
-    credentials: "include",
+    credentials: path.startsWith("/auth/") ? "include" : "omit",
     headers: init?.body
       ? { "Content-Type": "application/json", ...init.headers }
       : init?.headers,

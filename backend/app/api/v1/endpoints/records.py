@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user, get_db
+from app.api.dependencies import get_db, get_demo_user
 from app.models import User
 from app.schemas import (
     BulkDeleteRequest,
@@ -32,7 +32,7 @@ def list_dns_records(
     sort_by: Literal["name", "type", "ttl", "created_at"] = "name",
     sort_order: Literal["asc", "desc"] = "asc",
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_demo_user),
 ) -> dict:
     zone = zones.get_owned_zone(db, user, zone_id)
     return records.list_records(db, zone, search, record_type, page, page_size, sort_by, sort_order)
@@ -44,7 +44,7 @@ def create_dns_record(
     data: DNSRecordCreate,
     response: Response,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_demo_user),
 ) -> DNSRecordResponse:
     zone = zones.get_owned_zone(db, user, zone_id)
     record = records.create_record(db, zone, data)
@@ -57,7 +57,7 @@ def import_zone_file(
     zone_id: str,
     data: ZoneImportRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_demo_user),
 ) -> dict:
     zone = zones.get_owned_zone(db, user, zone_id)
     return {"imported": records.import_bind(db, zone, data.content)}
@@ -68,7 +68,7 @@ def export_zone_file(
     zone_id: str,
     format: Literal["bind", "json"] = "bind",
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_demo_user),
 ):
     zone = zones.get_owned_zone(db, user, zone_id)
     if format == "bind":
@@ -84,7 +84,7 @@ def bulk_delete_records(
     zone_id: str,
     data: BulkDeleteRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_demo_user),
 ) -> dict:
     zone = zones.get_owned_zone(db, user, zone_id)
     deleted, skipped = records.bulk_delete(db, zone, data.ids)
@@ -96,7 +96,7 @@ def get_dns_record(
     zone_id: str,
     record_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_demo_user),
 ) -> DNSRecordResponse:
     zone = zones.get_owned_zone(db, user, zone_id)
     return records.get_record(db, zone, record_id)
@@ -108,7 +108,7 @@ def update_dns_record(
     record_id: str,
     data: DNSRecordUpdate,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_demo_user),
 ) -> DNSRecordResponse:
     zone = zones.get_owned_zone(db, user, zone_id)
     return records.update_record(db, zone, records.get_record(db, zone, record_id), data)
@@ -119,7 +119,7 @@ def delete_dns_record(
     zone_id: str,
     record_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_demo_user),
 ) -> None:
     zone = zones.get_owned_zone(db, user, zone_id)
     records.delete_record(db, zone, records.get_record(db, zone, record_id))

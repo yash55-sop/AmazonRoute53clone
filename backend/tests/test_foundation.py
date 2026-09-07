@@ -24,15 +24,19 @@ def test_health(path):
     assert response.json() == {"status": "ok"}
 
 
-def test_cors_allows_only_configured_origin():
+def test_cors_allows_configured_and_local_origins():
     origin = str(settings.frontend_origin).rstrip("/")
-    allowed = asyncio.run(
-        request(
-            "OPTIONS",
-            "/api/v1/health",
-            headers={"Origin": origin, "Access-Control-Request-Method": "GET"},
+    for allowed_origin in {origin, "http://localhost:3000", "http://127.0.0.1:3000"}:
+        allowed = asyncio.run(
+            request(
+                "OPTIONS",
+                "/api/v1/health",
+                headers={"Origin": allowed_origin, "Access-Control-Request-Method": "GET"},
+            )
         )
-    )
+        assert allowed.status_code == 200
+        assert allowed.headers["access-control-allow-origin"] == allowed_origin
+        assert allowed.headers["access-control-allow-credentials"] == "true"
     denied = asyncio.run(
         request(
             "OPTIONS",
@@ -40,9 +44,6 @@ def test_cors_allows_only_configured_origin():
             headers={"Origin": "https://untrusted.example", "Access-Control-Request-Method": "GET"},
         )
     )
-    assert allowed.status_code == 200
-    assert allowed.headers["access-control-allow-origin"] == origin
-    assert allowed.headers["access-control-allow-credentials"] == "true"
     assert denied.status_code == 400
     assert "access-control-allow-origin" not in denied.headers
 

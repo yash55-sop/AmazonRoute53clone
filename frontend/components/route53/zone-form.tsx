@@ -105,7 +105,7 @@ export function ZoneForm() {
           ? "The selected VPC association is mocked for this educational clone."
           : undefined,
       );
-      router.push(`/route53/hosted-zones/${zone.zone_id}`);
+      router.push("/route53/hosted-zones");
     } catch (reason) {
       setError(
         reason instanceof Error

@@ -11,7 +11,6 @@ import Modal from "@cloudscape-design/components/modal";
 import RadioGroup from "@cloudscape-design/components/radio-group";
 import SideNavigation from "@cloudscape-design/components/side-navigation";
 import TopNavigation from "@cloudscape-design/components/top-navigation";
-import { ProtectedRoute } from "@/components/auth/protected-route";
 import { useAuth } from "@/components/auth/auth-provider";
 import {
   type ThemePreference,
@@ -68,7 +67,7 @@ export function Route53Shell({ children }: { children: React.ReactNode }) {
   const [globalSearch, setGlobalSearch] = useState("");
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   return (
-    <ProtectedRoute>
+    <>
       <NotificationProvider>
         <TopNavigation
           identity={{
@@ -172,6 +171,6 @@ export function Route53Shell({ children }: { children: React.ReactNode }) {
           </FormField>
         </Modal>
       </NotificationProvider>
-    </ProtectedRoute>
+    </>
   );
 }

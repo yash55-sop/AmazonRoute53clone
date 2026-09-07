@@ -30,7 +30,7 @@ test("hosted zone client sends server-backed collection and create requests", as
   assert.match(requests[0].url, /search=example/);
   assert.match(requests[0].url, /zone_type=PUBLIC/);
   assert.match(requests[0].url, /page=2/);
-  assert.equal(requests[0].options.credentials, "include");
+  assert.equal(requests[0].options.credentials, "omit");
 
   await zonesApi.create({
     name: "example.com",
@@ -72,7 +72,7 @@ test("record client supports creation, import, and useful API errors", async (t)
   );
 });
 
-test("record client sends an authenticated DELETE and accepts an empty 204 response", async (t) => {
+test("record client sends DELETE without credentials and accepts an empty 204 response", async (t) => {
   const requests = [];
   t.mock.method(globalThis, "fetch", async (url, options = {}) => {
     requests.push({ url: String(url), options });
@@ -85,5 +85,5 @@ test("record client sends an authenticated DELETE and accepts an empty 204 respo
   assert.equal(requests.length, 1);
   assert.match(requests[0].url, /\/hosted-zones\/ZTEST\/records\/RTEST$/);
   assert.equal(requests[0].options.method, "DELETE");
-  assert.equal(requests[0].options.credentials, "include");
+  assert.equal(requests[0].options.credentials, "omit");
 });
