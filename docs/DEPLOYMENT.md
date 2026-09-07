@@ -49,7 +49,7 @@ Set these environment variables:
 ```text
 APP_ENV=production
 DATABASE_URL=sqlite:////app/data/route53.db
-FRONTEND_ORIGIN=https://<vercel-or-custom-frontend-domain>
+FRONTEND_ORIGIN=https://<your-vercel-production-domain>
 SESSION_COOKIE_NAME=route53_session
 SESSION_COOKIE_SECURE=true
 SESSION_LIFETIME_SECONDS=86400
@@ -57,7 +57,7 @@ SESSION_LIFETIME_SECONDS=86400
 
 Railway supplies `PORT`; the image starts Uvicorn on `0.0.0.0` using that value. The non-root backend user owns `/app/data`, so SQLite can create and update the database on a new volume. Startup creates missing tables and seeds the demo user only when absent; it does not recreate or clear an existing database.
 
-For cookie authentication, use frontend and API custom domains under the same parent site when possible, such as `console.example.com` and `api.example.com`. The application intentionally retains its HTTP-only, SameSite=Lax session cookie.
+When `SESSION_COOKIE_SECURE=true`, authentication cookies use `SameSite=None; Secure` so a Vercel frontend can call the Railway API across sites. Set `FRONTEND_ORIGIN` to the exact Vercel production URL; do not use a wildcard with credentialed CORS. Custom frontend and API domains under the same parent site remain preferable when available.
 
 ## Vercel frontend
 
@@ -70,7 +70,7 @@ Configure Vercel with:
 Set the public API URL at build time:
 
 ```text
-NEXT_PUBLIC_API_URL=https://<railway-or-custom-api-domain>/api/v1
+NEXT_PUBLIC_API_URL=https://amazonroute53clone-production.up.railway.app/api/v1
 ```
 
-The Dockerfile is for local reproducibility and portability. Vercel can continue using its standard Next.js build and does not require Docker.
+The Railway URL is also the production fallback in the centralized frontend configuration, but setting it explicitly in Vercel keeps deployment configuration visible. Apply it to Production and Preview as needed, then redeploy because `NEXT_PUBLIC_*` values are embedded during the build. The Dockerfile is for local reproducibility and portability; Vercel can continue using its standard Next.js build and does not require Docker.

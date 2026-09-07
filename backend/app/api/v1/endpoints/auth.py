@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
@@ -8,6 +10,10 @@ from app.schemas import LoginRequest, UserResponse
 from app.services.auth import as_utc, authenticate, create_session, revoke_session
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+def session_cookie_samesite() -> Literal["lax", "none"]:
+    return "none" if settings.session_cookie_secure else "lax"
 
 
 @router.post("/login", response_model=UserResponse)
@@ -21,7 +27,7 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
         raw_token,
         httponly=True,
         secure=settings.session_cookie_secure,
-        samesite="lax",
+        samesite=session_cookie_samesite(),
         max_age=settings.session_lifetime_seconds,
         expires=as_utc(session.expires_at),
         path="/",
@@ -36,7 +42,7 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)) 
         settings.session_cookie_name,
         httponly=True,
         secure=settings.session_cookie_secure,
-        samesite="lax",
+        samesite=session_cookie_samesite(),
         path="/",
     )
 

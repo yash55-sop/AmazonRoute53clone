@@ -7,6 +7,7 @@ from httpx import ASGITransport, AsyncClient
 from pydantic import ValidationError
 from sqlalchemy.engine import make_url
 
+from app.api.v1.endpoints.auth import session_cookie_samesite
 from app.core.config import BACKEND_DIR, Settings, settings
 from app.main import app
 
@@ -57,6 +58,13 @@ def test_configuration_is_independent_of_working_directory(tmp_path, monkeypatch
         Settings(_env_file=None, database_url="postgresql://localhost/route53")
     with pytest.raises(ValidationError):
         Settings(_env_file=None, app_env="production", session_cookie_secure=False)
+
+
+def test_secure_session_cookie_supports_cross_site_frontend(monkeypatch):
+    monkeypatch.setattr(settings, "session_cookie_secure", False)
+    assert session_cookie_samesite() == "lax"
+    monkeypatch.setattr(settings, "session_cookie_secure", True)
+    assert session_cookie_samesite() == "none"
 
 
 def test_database_connection_enforces_foreign_keys_without_creating_tables(tmp_path, monkeypatch):
